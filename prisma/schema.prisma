@@ -1,0 +1,213 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STAFF
+  STUDENT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LEAVE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  staff     Staff?
+  student   Student?
+}
+
+model Staff {
+  id                  String                  @id @default(uuid())
+  userId              String                  @unique
+  user                User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                String
+  email               String?
+  phone               String?
+  classesTaught       Class[]                 @relation("ClassTeacher")
+  subjectAssignments  StaffSubjectAssignment[]
+  markedAttendance    Attendance[]            @relation("MarkedBy")
+  enteredMarks        ExamMark[]              @relation("MarkedBy")
+  workDoneRecords     WorkDone[]
+  homeworkAssigned    Homework[]
+  reviewedLeaves      LeaveRequest[]          @relation("ReviewedBy")
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+}
+
+model Class {
+  id                 String                  @id @default(uuid())
+  grade              String                  // e.g., "8"
+  section            String                  // e.g., "A"
+  name               String                  @unique // "8-A"
+  classTeacherId     String?                 @unique
+  classTeacher       Staff?                  @relation("ClassTeacher", fields: [classTeacherId], references: [id])
+  students           Student[]
+  subjectAssignments StaffSubjectAssignment[]
+  workDoneRecords     WorkDone[]
+  homework           Homework[]
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+}
+
+model Subject {
+  id                 String                  @id @default(uuid())
+  name               String                  @unique // e.g., "Science"
+  subjectAssignments StaffSubjectAssignment[]
+  examMarks          ExamMark[]
+  workDoneRecords     WorkDone[]
+  homework           Homework[]
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+}
+
+model StaffSubjectAssignment {
+  id             String      @id @default(uuid())
+  staffId        String
+  staff          Staff       @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  classId        String
+  class          Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId      String
+  subject        Subject     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([staffId, classId, subjectId])
+}
+
+model Student {
+  id              String         @id @default(uuid()) // STU20260001
+  userId          String         @unique
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  admissionNumber String         @unique
+  name            String
+  dob             DateTime
+  gender          String
+  parentName      String
+  parentPhone     String
+  classId         String
+  class           Class          @relation(fields: [classId], references: [id])
+  attendance      Attendance[]
+  examMarks       ExamMark[]
+  leaveRequests   LeaveRequest[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Attendance {
+  id          String           @id @default(uuid())
+  studentId   String
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date        DateTime         // Stored as Date only (midnight)
+  status      AttendanceStatus
+  markedById  String
+  markedBy    Staff            @relation("MarkedBy", fields: [markedById], references: [id])
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([studentId, date])
+}
+
+model Exam {
+  id        String     @id @default(uuid())
+  name      String     @unique // e.g. "Exam 1", "Exam 2"
+  examMarks ExamMark[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model ExamMark {
+  id           String   @id @default(uuid())
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examId       String
+  exam         Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  subjectId    String
+  subject      Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  maxMark      Float
+  obtainedMark Float
+  markedById   String
+  markedBy     Staff    @relation("MarkedBy", fields: [markedById], references: [id])
+  isDraft      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([studentId, examId, subjectId])
+}
+
+model WorkDone {
+  id          String   @id @default(uuid())
+  date        DateTime
+  classId     String
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId   String
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  staffId     String
+  staff       Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  topic       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Homework {
+  id          String               @id @default(uuid())
+  classId     String
+  class       Class                @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId   String
+  subject     Subject              @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  staffId     String
+  staff       Staff                @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  assignedDate DateTime            @default(now())
+  dueDate     DateTime
+  attachments HomeworkAttachment[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model HomeworkAttachment {
+  id         String   @id @default(uuid())
+  homeworkId String
+  homework   Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  fileName   String
+  filePath   String
+  fileType   String
+  fileSize   Int
+  createdAt  DateTime @default(now())
+}
+
+model LeaveRequest {
+  id             String      @id @default(uuid())
+  studentId      String
+  student        Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  startDate      DateTime
+  endDate        DateTime
+  reason         String
+  status         LeaveStatus @default(PENDING)
+  remarks        String?
+  attachmentPath String?     // Optional file path
+  reviewedById   String?
+  reviewedBy     Staff?      @relation("ReviewedBy", fields: [reviewedById], references: [id])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
