@@ -292,7 +292,7 @@ export default async function StaffDashboardPage() {
           </div>
           <div className="mt-4 divide-y divide-slate-50 space-y-4">
             {recentHomework.length > 0 ? (
-              recentHomework.map((hw) => (
+              recentHomework.map((hw: { id: string; title: string; class: { name: string }; subject: { name: string }; dueDate: Date; description: string }) => (
                 <div key={hw.id} className="pt-4 first:pt-0">
                   <div className="flex items-start justify-between">
                     <div>
@@ -330,7 +330,7 @@ export default async function StaffDashboardPage() {
           </div>
           <div className="mt-4 divide-y divide-slate-50 space-y-4">
             {recentWorkDone.length > 0 ? (
-              recentWorkDone.map((wd) => (
+              recentWorkDone.map((wd: { id: string; topic: string; class: { name: string }; subject: { name: string }; date: Date; description?: string | null }) => (
                 <div key={wd.id} className="pt-4 first:pt-0">
                   <div className="flex items-start justify-between">
                     <div>

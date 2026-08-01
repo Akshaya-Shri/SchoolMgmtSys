@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     const existingAdmissions = new Set(
       (await prisma.student.findMany({
         select: { admissionNumber: true },
-      })).map(s => s.admissionNumber)
+      })).map((s: { admissionNumber: string }) => s.admissionNumber)
     )
 
     // Cache existing student usernames
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       (await prisma.user.findMany({
         where: { role: 'STUDENT' },
         select: { username: true },
-      })).map(u => u.username)
+      })).map((u: { username: string }) => u.username)
     )
 
     // Count students to generate IDs

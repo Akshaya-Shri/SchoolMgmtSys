@@ -51,7 +51,32 @@ export default async function StudentsPage() {
   })
 
   // Format student records for client
-  const formattedStudents = students.map((s) => {
+  const formattedStudents = students.map((s: {
+    id: string
+    admissionNumber: string
+    name: string
+    gender: string
+    dob: Date
+    parentName: string
+    parentPhone: string
+    attendance: { status: string }[]
+    examMarks: {
+      id: string
+      exam: { name: string }
+      subject: { name: string }
+      obtainedMark: number
+      maxMark: number
+      isDraft: boolean
+    }[]
+    leaveRequests: {
+      id: string
+      startDate: Date
+      endDate: Date
+      reason: string
+      status: string
+      remarks: string | null
+    }[]
+  }) => {
     const totalDays = s.attendance.length
     const presentDays = s.attendance.filter((a) => a.status === 'PRESENT' || a.status === 'LEAVE').length // count leave as present/exempt in percentage
     const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100
@@ -80,7 +105,7 @@ export default async function StudentsPage() {
         startDate: lr.startDate.toISOString().split('T')[0],
         endDate: lr.endDate.toISOString().split('T')[0],
         reason: lr.reason,
-        status: lr.status,
+        status: lr.status as 'PENDING' | 'APPROVED' | 'REJECTED',
         remarks: lr.remarks || '',
       })),
     }

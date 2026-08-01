@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -15,6 +15,14 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-sm text-slate-500">Loading login form...</div>}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || ''
@@ -55,18 +63,14 @@ export default function LoginPage() {
         return
       }
 
-      // Successful login
       router.refresh()
-      
-      // Redirect based on role and callbackUrl
+
       if (callbackUrl) {
         router.push(callbackUrl)
+      } else if (result.role === 'STAFF') {
+        router.push('/staff/dashboard')
       } else {
-        if (result.role === 'STAFF') {
-          router.push('/staff/dashboard')
-        } else {
-          router.push('/student/dashboard')
-        }
+        router.push('/student/dashboard')
       }
     } catch (err) {
       console.error('Login error:', err)
@@ -75,7 +79,6 @@ export default function LoginPage() {
     }
   }
 
-  // Helper function to fill test credentials
   const fillTestCredentials = (username: string) => {
     setValue('username', username)
     setValue('password', 'password123')
@@ -84,7 +87,6 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8 bg-gradient-to-tr from-slate-100 via-indigo-50/20 to-violet-50/20">
       <div className="w-full max-w-md space-y-8">
-        {/* Header */}
         <div className="text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white font-black text-2xl shadow-lg shadow-indigo-100">
             S
@@ -97,10 +99,8 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Card Container */}
         <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-xl shadow-slate-100/50">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            {/* Error Notification */}
             {error && (
               <div className="flex items-center gap-3 rounded-xl bg-rose-50 p-4 border border-rose-100 text-rose-800 text-sm">
                 <AlertCircle className="h-5 w-5 shrink-0 text-rose-500" />
@@ -108,7 +108,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Username Input */}
             <div className="space-y-1.5">
               <label htmlFor="username" className="text-sm font-semibold text-slate-700">
                 Username / Student ID
@@ -135,7 +134,6 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Password Input */}
             <div className="space-y-1.5">
               <label htmlFor="password" className="text-sm font-semibold text-slate-700">
                 Password
@@ -162,7 +160,6 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
@@ -179,7 +176,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Test Account Section */}
           <div className="mt-8 border-t border-slate-100 pt-6">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
               Test Accounts (Pre-Seeded)

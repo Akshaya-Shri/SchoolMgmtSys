@@ -1,6 +1,6 @@
 import pg from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '../generated/prisma/client.js'
+import { PrismaClient } from '../generated/prisma/client'
 
 let prisma: PrismaClient
 let pool: pg.Pool
@@ -26,4 +26,4 @@ prisma = globalForPrisma.prisma
 pool = globalForPrisma.pool!
 
 export { prisma, pool }
-export * from '../generated/prisma/client.js'
+export * from '../generated/prisma/client'
