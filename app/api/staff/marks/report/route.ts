@@ -49,34 +49,43 @@ export async function GET(request: Request) {
 
   const academicYearFilter = parseAcademicYear(academicYear)
   const where: Record<string, unknown> = {}
-  if (classId) where.classId = classId
-  if (subjectId) where.subjectId = subjectId
-  if (examId) where.examId = examId
+  if (classId || section) {
+    where.student = {}
+    if (classId) (where.student as Record<string, unknown>).classId = classId
+    if (section) (where.student as Record<string, unknown>).class = { section }
+  }
+  if (subjectId || examId) {
+    where.examSubject = {}
+    if (subjectId) (where.examSubject as Record<string, unknown>).subjectId = subjectId
+    if (examId) (where.examSubject as Record<string, unknown>).examId = examId
+  }
   if (academicYearFilter) {
     where.createdAt = { gte: academicYearFilter.startDate, lte: academicYearFilter.endDate }
   }
 
   const marks = await prisma.examMark.findMany({
-    where: {
-      ...(Object.keys(where).length > 0 ? where : {}),
-      student: section ? { class: { section } } : undefined,
-    },
+    where: Object.keys(where).length > 0 ? where : {},
     include: {
       student: { select: { id: true, name: true, admissionNumber: true, class: { select: { name: true, section: true } } } },
-      subject: { select: { name: true } },
-      exam: { select: { name: true } },
+      examSubject: {
+        include: {
+          subject: { select: { name: true } },
+          exam: { select: { name: true } },
+        },
+      },
     },
     orderBy: [{ student: { name: 'asc' } }, { createdAt: 'asc' }],
   })
 
   const rows = marks.map((mark) => {
-    const percentage = mark.maxMark > 0 ? `${Math.round((mark.obtainedMark / mark.maxMark) * 100)}%` : '0%'
+    const maxMark = mark.examSubject.maxMark
+    const percentage = maxMark > 0 ? `${Math.round((mark.obtainedMark / maxMark) * 100)}%` : '0%'
     return {
       studentId: mark.student.id,
       studentName: mark.student.name,
-      subject: mark.subject.name,
-      exam: mark.exam.name,
-      maxMark: mark.maxMark,
+      subject: mark.examSubject.subject.name,
+      exam: mark.examSubject.exam.name,
+      maxMark,
       obtainedMark: mark.obtainedMark,
       percentage,
     }

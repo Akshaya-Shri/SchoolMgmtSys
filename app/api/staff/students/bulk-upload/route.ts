@@ -22,9 +22,16 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const { students, classId } = body as { students: StudentImportRow[]; classId: string }
-
+ 
     if (!students || !Array.isArray(students) || !classId) {
       return NextResponse.json({ error: 'Invalid payload.' }, { status: 400 })
+    }
+ 
+    const normalizeGender = (value: string) => {
+      const normalized = value.trim().toLowerCase()
+      if (normalized === 'male') return 'MALE'
+      if (normalized === 'female') return 'FEMALE'
+      return 'OTHER'
     }
 
     // 1. Verify that this staff member is the class teacher for classId
@@ -93,6 +100,8 @@ export async function POST(request: Request) {
       }
 
       try {
+        const genderValue = normalizeGender(gender)
+
         // Generate a unique Student ID (e.g. STU20260001)
         let studentId = ''
         let isUnique = false
@@ -137,10 +146,15 @@ export async function POST(request: Request) {
               admissionNumber,
               name,
               dob: parsedDate,
-              gender,
-              parentName,
-              parentPhone,
+              gender: genderValue,
               classId,
+              guardianContacts: {
+                create: {
+                  name: parentName,
+                  relation: 'Parent',
+                  phone: parentPhone,
+                },
+              },
             },
           })
         })

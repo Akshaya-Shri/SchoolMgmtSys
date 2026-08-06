@@ -34,13 +34,20 @@ export default async function StudentsPage() {
   const students = await prisma.student.findMany({
     where: { classId: classTeacherClass.id },
     include: {
+      guardianContacts: {
+        select: { name: true, phone: true },
+      },
       attendance: {
         select: { status: true },
       },
       examMarks: {
         include: {
-          exam: { select: { name: true } },
-          subject: { select: { name: true } },
+          examSubject: {
+            include: {
+              exam: { select: { name: true } },
+              subject: { select: { name: true } },
+            },
+          },
         },
       },
       leaveRequests: {
@@ -57,15 +64,16 @@ export default async function StudentsPage() {
     name: string
     gender: string
     dob: Date
-    parentName: string
-    parentPhone: string
+    guardianContacts: { name: string; phone: string | null }[]
     attendance: { status: string }[]
     examMarks: {
       id: string
-      exam: { name: string }
-      subject: { name: string }
+      examSubject: {
+        exam: { name: string }
+        subject: { name: string }
+        maxMark: number
+      }
       obtainedMark: number
-      maxMark: number
       isDraft: boolean
     }[]
     leaveRequests: {
@@ -81,23 +89,24 @@ export default async function StudentsPage() {
     const presentDays = s.attendance.filter((a) => a.status === 'PRESENT' || a.status === 'LEAVE').length // count leave as present/exempt in percentage
     const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100
 
+    const guardian = s.guardianContacts[0] || { name: '', phone: '' }
     return {
       id: s.id, // e.g. STU20260001
       admissionNumber: s.admissionNumber,
       name: s.name,
       gender: s.gender,
       dob: s.dob.toISOString().split('T')[0],
-      parentName: s.parentName,
-      parentPhone: s.parentPhone,
+      parentName: guardian.name,
+      parentPhone: guardian.phone ?? '',
       attendancePercentage,
       attendanceRawCount: { present: presentDays, total: totalDays },
       examMarks: s.examMarks.map((em) => ({
         id: em.id,
-        examName: em.exam.name,
-        subjectName: em.subject.name,
+        examName: em.examSubject.exam.name,
+        subjectName: em.examSubject.subject.name,
         obtainedMark: em.obtainedMark,
-        maxMark: em.maxMark,
-        percentage: em.maxMark > 0 ? Math.round((em.obtainedMark / em.maxMark) * 100) : 0,
+        maxMark: em.examSubject.maxMark,
+        percentage: em.examSubject.maxMark > 0 ? Math.round((em.obtainedMark / em.examSubject.maxMark) * 100) : 0,
         isDraft: em.isDraft,
       })),
       leaveRequests: s.leaveRequests.map((lr) => ({
