@@ -15,7 +15,14 @@ export default async function StudentDashboardPage() {
       class: { select: { name: true } },
       attendance: true,
       examMarks: {
-        include: { exam: { select: { name: true } }, subject: { select: { name: true } } },
+        include: {
+          examSubject: {
+            include: {
+              exam: { select: { name: true } },
+              subject: { select: { name: true } },
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         take: 1,
       },
@@ -40,7 +47,12 @@ export default async function StudentDashboardPage() {
     { label: 'Attendance', value: `${attendanceRate}%` },
     { label: 'Homework', value: `${homeworkCount}` },
     { label: 'Pending Leaves', value: `${student.leaveRequests.length}` },
-    { label: 'Latest Result', value: latestExam ? `${latestExam.subject.name}: ${latestExam.obtainedMark}/${latestExam.maxMark}` : 'No mark' },
+    {
+      label: 'Latest Result',
+      value: latestExam
+        ? `${latestExam.examSubject.subject.name}: ${latestExam.obtainedMark}/${latestExam.examSubject.maxMark}`
+        : 'No mark',
+    },
   ]
 
   return (

@@ -11,8 +11,12 @@ export default async function StudentMarksPage() {
   const marks = await prisma.examMark.findMany({
     where: { studentId: session.studentId },
     include: {
-      exam: { select: { name: true } },
-      subject: { select: { name: true } },
+      examSubject: {
+        include: {
+          exam: { select: { name: true } },
+          subject: { select: { name: true } },
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -39,13 +43,13 @@ export default async function StudentMarksPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {marks.map((mark: { id: string; exam: { name: string }; subject: { name: string }; maxMark: number; obtainedMark: number }) => {
-                const percentage = Math.round((mark.obtainedMark / mark.maxMark) * 100)
+              {marks.map((mark: { id: string; examSubject: { exam: { name: string }; subject: { name: string }; maxMark: number }; obtainedMark: number }) => {
+                const percentage = Math.round((mark.obtainedMark / mark.examSubject.maxMark) * 100)
                 return (
                   <tr key={mark.id}>
-                    <td className="px-4 py-3 text-slate-700">{mark.exam.name}</td>
-                    <td className="px-4 py-3 text-slate-700">{mark.subject.name}</td>
-                    <td className="px-4 py-3 text-slate-700">{mark.maxMark}</td>
+                    <td className="px-4 py-3 text-slate-700">{mark.examSubject.exam.name}</td>
+                    <td className="px-4 py-3 text-slate-700">{mark.examSubject.subject.name}</td>
+                    <td className="px-4 py-3 text-slate-700">{mark.examSubject.maxMark}</td>
                     <td className="px-4 py-3 text-slate-700">{mark.obtainedMark}</td>
                     <td className="px-4 py-3 font-semibold text-indigo-700">{percentage}%</td>
                   </tr>

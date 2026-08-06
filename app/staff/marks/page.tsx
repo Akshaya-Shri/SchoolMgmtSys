@@ -25,8 +25,12 @@ export default async function StaffMarksPage() {
       where: { markedById: session.staffId },
       include: {
         student: { select: { id: true, name: true, admissionNumber: true, class: { select: { name: true } } } },
-        exam: { select: { name: true } },
-        subject: { select: { name: true } },
+        examSubject: {
+          include: {
+            exam: { select: { name: true } },
+            subject: { select: { name: true } },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     }),
@@ -36,5 +40,5 @@ export default async function StaffMarksPage() {
   const classes = Array.from(new Map(assignments.subjectAssignments.map((item) => [item.classId, { id: item.classId, name: item.className }])).values())
   const subjects = Array.from(new Map(assignments.subjectAssignments.map((item) => [item.subjectId, { id: item.subjectId, name: item.subjectName }])).values())
 
-  return <MarksClient initialMarks={marks.map((mark) => ({ id: mark.id, student: mark.student, exam: mark.exam, subject: mark.subject, maxMark: mark.maxMark, obtainedMark: mark.obtainedMark, createdAt: mark.createdAt.toISOString() }))} classes={classes} subjects={subjects} exams={exams.map((exam) => ({ id: exam.id, name: exam.name }))} />
+  return <MarksClient initialMarks={marks.map((mark) => ({ id: mark.id, student: mark.student, exam: mark.examSubject.exam, subject: mark.examSubject.subject, maxMark: mark.examSubject.maxMark, obtainedMark: mark.obtainedMark, createdAt: mark.createdAt.toISOString() }))} classes={classes} subjects={subjects} exams={exams.map((exam) => ({ id: exam.id, name: exam.name }))} />
 }

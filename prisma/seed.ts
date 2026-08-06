@@ -11,17 +11,21 @@ async function main() {
   console.log('Seeding database...')
 
   // Clear existing data
+  await prisma.leaveRequestAttachment.deleteMany({})
   await prisma.leaveRequest.deleteMany({})
   await prisma.homeworkAttachment.deleteMany({})
   await prisma.homework.deleteMany({})
   await prisma.workDone.deleteMany({})
   await prisma.examMark.deleteMany({})
+  await prisma.examSubject.deleteMany({})
   await prisma.exam.deleteMany({})
   await prisma.attendance.deleteMany({})
+  await prisma.guardianContact.deleteMany({})
   await prisma.student.deleteMany({})
   await prisma.staffSubjectAssignment.deleteMany({})
   await prisma.class.deleteMany({})
   await prisma.subject.deleteMany({})
+  await prisma.academicYear.deleteMany({})
   await prisma.staff.deleteMany({})
   await prisma.user.deleteMany({})
 
@@ -72,12 +76,43 @@ async function main() {
   const english = await prisma.subject.create({ data: { name: 'English' } })
   const social = await prisma.subject.create({ data: { name: 'Social Studies' } })
 
-  // 3. Create Classes
-  const c6A = await prisma.class.create({ data: { grade: '6', section: 'A', name: '6-A' } })
-  const c7A = await prisma.class.create({ data: { grade: '7', section: 'A', name: '7-A' } })
-  const c8A = await prisma.class.create({ data: { grade: '8', section: 'A', name: '8-A', classTeacherId: priyaStaff.id } })
-  const c9A = await prisma.class.create({ data: { grade: '9', section: 'A', name: '9-A' } })
-  const c10A = await prisma.class.create({ data: { grade: '10', section: 'A', name: '10-A', classTeacherId: amitStaff.id } })
+  // 3. Create Academic Year
+  const currentAcademicYear = await prisma.academicYear.create({
+    data: {
+      label: '2025-2026',
+      startDate: new Date('2025-06-15T00:00:00Z'),
+      endDate: new Date('2026-05-31T23:59:59Z'),
+    },
+  })
+
+  // 4. Create Classes
+  const c6A = await prisma.class.create({
+    data: { grade: '6', section: 'A', name: '6-A', academicYearId: currentAcademicYear.id },
+  })
+  const c7A = await prisma.class.create({
+    data: { grade: '7', section: 'A', name: '7-A', academicYearId: currentAcademicYear.id },
+  })
+  const c8A = await prisma.class.create({
+    data: {
+      grade: '8',
+      section: 'A',
+      name: '8-A',
+      classTeacherId: priyaStaff.id,
+      academicYearId: currentAcademicYear.id,
+    },
+  })
+  const c9A = await prisma.class.create({
+    data: { grade: '9', section: 'A', name: '9-A', academicYearId: currentAcademicYear.id },
+  })
+  const c10A = await prisma.class.create({
+    data: {
+      grade: '10',
+      section: 'A',
+      name: '10-A',
+      classTeacherId: amitStaff.id,
+      academicYearId: currentAcademicYear.id,
+    },
+  })
 
   console.log('Created subjects and classes.')
 
@@ -117,10 +152,15 @@ async function main() {
       admissionNumber: 'ADM20260001',
       name: 'Rahul Kumar',
       dob: new Date('2012-05-15T00:00:00Z'),
-      gender: 'Male',
-      parentName: 'Sanjay Kumar',
-      parentPhone: '9876543211',
+      gender: 'MALE',
       classId: c8A.id,
+      guardianContacts: {
+        create: {
+          name: 'Sanjay Kumar',
+          relation: 'Father',
+          phone: '9876543211',
+        },
+      },
     },
   })
 
@@ -139,10 +179,15 @@ async function main() {
       admissionNumber: 'ADM20260002',
       name: 'Anya Sen',
       dob: new Date('2012-09-22T00:00:00Z'),
-      gender: 'Female',
-      parentName: 'Rohan Sen',
-      parentPhone: '9876543212',
+      gender: 'FEMALE',
       classId: c8A.id,
+      guardianContacts: {
+        create: {
+          name: 'Rohan Sen',
+          relation: 'Father',
+          phone: '9876543212',
+        },
+      },
     },
   })
 
@@ -159,7 +204,27 @@ async function main() {
 
   console.log('Created 6 standard exams.')
 
-  // 7. Create Sample Attendance for Rahul and Anya
+  // 7. Create exam subjects for the first exam
+  const exam1Subjects = await Promise.all([
+    prisma.examSubject.create({
+      data: {
+        examId: exams[0].id,
+        subjectId: science.id,
+        maxMark: 100,
+      },
+    }),
+    prisma.examSubject.create({
+      data: {
+        examId: exams[0].id,
+        subjectId: maths.id,
+        maxMark: 100,
+      },
+    }),
+  ])
+
+  console.log('Created exam subject definitions.')
+
+  // 8. Create Sample Attendance for Rahul and Anya
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   
@@ -235,27 +300,21 @@ async function main() {
     data: [
       {
         studentId: rahulStudent.id,
-        examId: exams[0].id,
-        subjectId: science.id,
-        maxMark: 100,
+        examSubjectId: exam1Subjects[0].id,
         obtainedMark: 85,
         markedById: priyaStaff.id,
         isDraft: false,
       },
       {
         studentId: anyaStudent.id,
-        examId: exams[0].id,
-        subjectId: science.id,
-        maxMark: 100,
+        examSubjectId: exam1Subjects[0].id,
         obtainedMark: 92,
         markedById: priyaStaff.id,
         isDraft: false,
       },
       {
         studentId: rahulStudent.id,
-        examId: exams[0].id,
-        subjectId: maths.id,
-        maxMark: 100,
+        examSubjectId: exam1Subjects[1].id,
         obtainedMark: 78,
         markedById: amitStaff.id,
         isDraft: false,
