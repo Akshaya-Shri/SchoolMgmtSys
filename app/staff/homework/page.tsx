@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth/session'
 import { getStaffAssignments } from '@/lib/permissions'
 import { prisma } from '@/lib/db'
+import HomeworkClient from './HomeworkClient'
 
 export default async function StaffHomeworkPage() {
   const session = await getSession()
@@ -29,43 +30,8 @@ export default async function StaffHomeworkPage() {
     orderBy: { assignedDate: 'desc' },
   })
 
-  return (
-    <div className="space-y-5">
-      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-extrabold text-slate-900">Homework</h1>
-        <p className="mt-2 text-sm text-slate-500">Allocate homework to your subject and class assignments securely.</p>
-      </div>
+  const classes = Array.from(new Map(assignments.subjectAssignments.map((item) => [item.classId, { id: item.classId, name: item.className }])).values())
+  const subjects = Array.from(new Map(assignments.subjectAssignments.map((item) => [item.subjectId, { id: item.subjectId, name: item.subjectName }])).values())
 
-      {homework.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">No homework allocated yet.</div>
-      ) : (
-        <div className="space-y-4">
-          {homework.map((item: { id: string; class: { name: string }; subject: { name: string }; title: string; assignedDate: Date; dueDate: Date; description: string; attachments: { id: string; fileName: string }[] }) => (
-            <div key={item.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">{item.class.name} • {item.subject.name}</p>
-                  <h3 className="mt-1 text-lg font-bold text-slate-900">{item.title}</h3>
-                </div>
-                <div className="text-sm text-slate-500">
-                  <p>Assigned: {new Date(item.assignedDate).toLocaleDateString()}</p>
-                  <p>Due: {new Date(item.dueDate).toLocaleDateString()}</p>
-                </div>
-              </div>
-              <p className="mt-3 text-sm text-slate-600">{item.description}</p>
-              {item.attachments.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {item.attachments.map((attachment) => (
-                    <span key={attachment.id} className="rounded-xl bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700">
-                      {attachment.fileName}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
+  return <HomeworkClient initialHomework={homework.map((item) => ({ id: item.id, class: item.class, subject: item.subject, title: item.title, description: item.description, assignedDate: item.assignedDate.toISOString(), dueDate: item.dueDate.toISOString(), attachments: item.attachments.map((attachment) => ({ id: attachment.id, fileName: attachment.fileName, filePath: attachment.filePath })), staffId: item.staffId }))} classes={classes} subjects={subjects} currentStaffId={session.staffId} />
 }

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth/session'
 import { getStaffAssignments } from '@/lib/permissions'
 import { prisma } from '@/lib/db'
+import WorkDoneClient from './WorkDoneClient'
 
 export default async function StaffWorkDonePage() {
   const session = await getSession()
@@ -28,31 +29,8 @@ export default async function StaffWorkDonePage() {
     orderBy: { date: 'desc' },
   })
 
-  return (
-    <div className="space-y-5">
-      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-extrabold text-slate-900">Work Done</h1>
-        <p className="mt-2 text-sm text-slate-500">Track the topics covered for your assigned classes and subjects.</p>
-      </div>
+  const classes = Array.from(new Map(assignments.subjectAssignments.map((item) => [item.classId, { id: item.classId, name: item.className }])).values())
+  const subjects = Array.from(new Map(assignments.subjectAssignments.map((item) => [item.subjectId, { id: item.subjectId, name: item.subjectName }])).values())
 
-      {workDone.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">No work-done records found.</div>
-      ) : (
-        <div className="space-y-4">
-          {workDone.map((item: { id: string; class: { name: string }; subject: { name: string }; topic: string; date: Date; description?: string | null }) => (
-            <div key={item.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">{item.class.name} • {item.subject.name}</p>
-                  <h3 className="mt-1 text-lg font-bold text-slate-900">{item.topic}</h3>
-                </div>
-                <p className="text-sm text-slate-500">{new Date(item.date).toLocaleDateString()}</p>
-              </div>
-              {item.description && <p className="mt-3 text-sm text-slate-600">{item.description}</p>}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
+  return <WorkDoneClient initialEntries={workDone.map((item) => ({ id: item.id, date: item.date.toISOString(), class: item.class, subject: item.subject, topic: item.topic, description: item.description, staffId: item.staffId }))} classes={classes} subjects={subjects} currentStaffId={session.staffId} />
 }

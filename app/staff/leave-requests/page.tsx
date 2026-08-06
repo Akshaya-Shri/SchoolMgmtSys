@@ -3,6 +3,7 @@ import { AlertCircle } from 'lucide-react'
 import { getSession } from '@/lib/auth/session'
 import { getStaffAssignments } from '@/lib/permissions'
 import { prisma } from '@/lib/db'
+import LeaveRequestsClient from './LeaveRequestsClient'
 
 export default async function StaffLeaveRequestsPage() {
   const session = await getSession()
@@ -31,39 +32,10 @@ export default async function StaffLeaveRequestsPage() {
       student: { classId: classTeacherClass.id },
     },
     include: {
-      student: { select: { name: true, admissionNumber: true } },
+      student: { select: { name: true, admissionNumber: true, class: { select: { name: true } } } },
     },
     orderBy: { createdAt: 'desc' },
   })
 
-  return (
-    <div className="space-y-5">
-      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-extrabold text-slate-900">Leave Requests</h1>
-        <p className="mt-2 text-sm text-slate-500">Manage leave applications for {classTeacherClass.name}.</p>
-      </div>
-
-      {leaveRequests.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">No leave requests available.</div>
-      ) : (
-        <div className="space-y-4">
-          {leaveRequests.map((request: { id: string; student: { name: string; admissionNumber: string }; reason: string; startDate: Date; endDate: Date; status: string; remarks?: string | null }) => (
-            <div key={request.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">{request.student.name} • {request.student.admissionNumber}</p>
-                  <h3 className="mt-1 text-lg font-bold text-slate-900">{request.reason}</h3>
-                </div>
-                <div className="text-sm text-slate-500">
-                  <p>{new Date(request.startDate).toLocaleDateString()} to {new Date(request.endDate).toLocaleDateString()}</p>
-                  <p className="mt-1 font-semibold text-slate-700">Status: {request.status}</p>
-                </div>
-              </div>
-              {request.remarks && <p className="mt-3 text-sm text-slate-600">Remarks: {request.remarks}</p>}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
+  return <LeaveRequestsClient initialRequests={leaveRequests.map((request) => ({ id: request.id, student: request.student, className: request.student.class.name, startDate: request.startDate.toISOString(), endDate: request.endDate.toISOString(), reason: request.reason, createdAt: request.createdAt.toISOString(), status: request.status, remarks: request.remarks }))} />
 }
